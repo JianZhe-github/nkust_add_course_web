@@ -1,0 +1,76 @@
+version: '3.9'
+
+networks:
+  net:
+    driver: bridge
+
+services:
+  
+  flask_app:
+    build: .
+    container_name: flask_app
+    restart: always
+    environment:
+      - SECRET_KEY=a3d1f6c82b2b99a87e9c4d3f8f05a1d4568eabcaf9b6e3f8e2b2e6c3a4d1f5e2
+      - DATABASE_URL=mysql://user:password@db/mydatabase
+    depends_on:
+      - db
+    volumes:
+      - ./data:/app
+    networks:
+      net:
+    ports:
+      - "5000:5000"
+
+  db:
+    image: mysql:8.0
+    container_name: mysql_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: mydatabase
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      net:
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: phpmyadmin
+    restart: always
+    environment:
+      - PMA_HOST=db
+      - MYSQL_ROOT_PASSWORD=password 
+    depends_on:
+      - db
+    networks:
+      net:
+    ports:
+      - "8888:80"
+
+  n8n:
+    container_name: n8n
+    image: docker.n8n.io/n8nio/n8n
+    restart: always
+    networks:
+      net:
+    volumes:
+      - n8n_data:/home/node/.n8n
+    ports:
+      - "5678:5678"
+
+  chromium:
+    container_name: browserless
+    image: ghcr.io/browserless/chromium:latest
+    restart: always
+    environment:
+      - CORS=true
+      - TIMEOUT=120000 
+    networks:
+      net:
+
+volumes:
+  mysql_data:
+  n8n_data:

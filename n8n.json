@@ -1,0 +1,449 @@
+{
+  "name": "課程通知",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "select",
+        "table": {
+          "__rl": true,
+          "value": "course",
+          "mode": "list",
+          "cachedResultName": "course"
+        },
+        "options": {
+          "outputColumns": [
+            "course_code"
+          ],
+          "selectDistinct": true
+        }
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [
+        -1600,
+        200
+      ],
+      "id": "6fc1da26-a58c-4fc0-8869-7734892285ab",
+      "name": "MySQL",
+      "credentials": {
+        "mySql": {
+          "id": "WFLudHUDyDuCwI6O",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "table": {
+          "__rl": true,
+          "value": "course",
+          "mode": "list",
+          "cachedResultName": "course"
+        },
+        "returnAll": true,
+        "where": {
+          "values": [
+            {
+              "column": "course_code",
+              "value": "={{ $json.course_id }}"
+            }
+          ]
+        },
+        "sort": {
+          "values": [
+            {
+              "column": "user_id"
+            }
+          ]
+        },
+        "options": {
+          "outputColumns": [
+            "user_id",
+            "course_code"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [
+        -780,
+        60
+      ],
+      "id": "8f33ba77-c356-4da8-b65b-59c5ca468e27",
+      "name": "MySQL1",
+      "credentials": {
+        "mySql": {
+          "id": "WFLudHUDyDuCwI6O",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "course_code"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        -1400,
+        200
+      ],
+      "id": "5d3746ab-7c48-4932-9c42-5d0d029c8531",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "availableCourses",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -1020,
+        200
+      ],
+      "id": "390a0baa-28d1-49ef-840c-3b87b294ce09",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "sortFieldsUi": {
+          "sortField": [
+            {
+              "fieldName": "user_id"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.sort",
+      "typeVersion": 1,
+      "position": [
+        -380,
+        180
+      ],
+      "id": "b7a3733d-4b78-42c5-9cb7-9c7e9f7ecb2a",
+      "name": "Sort1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 取得輸入數據\nconst data = items.map(item => item.json);\n\n// 使用 reduce 來分組 user_id 並整理課程數據\nconst groupedData = data.reduce((acc, item) => {\n    let existingUser = acc.find(entry => entry.user_id === item.user_id);\n    \n    if (existingUser) {\n        existingUser.course.push([item.course_code, item.num]);\n    } else {\n        acc.push({\n            user_id: item.user_id,\n            course: [[item.course_code, item.num]]\n        });\n    }\n    \n    return acc;\n}, []);\n\n// 將結果轉換為 n8n 可讀格式\nreturn groupedData.map(item => ({ json: item }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -180,
+        180
+      ],
+      "id": "a98d6a09-82e3-4d50-a71a-f5f9f2c104fa",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "fromEmail": "n8n@jianzhe.cc",
+        "toEmail": "={{ $json.email }}",
+        "subject": "加選名額通知",
+        "emailFormat": "text",
+        "text": "=親愛的用戶 {{ $json.username }}你好，\n\n你選擇的課程有名額了，詳情如下：  \n\n{{ $json[\"course\"].map(course => `- 課程代碼: ${course[0]}，剩餘人數: ${course[1]}`).join(\"\\n\") }}  \n\n請注意盡快前往加選！選課連結如下\nhttp://aais1.nkust.edu.tw/selcrs_dp\n",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        380,
+        160
+      ],
+      "id": "9b29e270-e1da-429d-a689-a2a3d84fdbc6",
+      "name": "Send Email",
+      "webhookId": "69492611-2509-44e3-af3c-bcb762085701",
+      "credentials": {
+        "smtp": {
+          "id": "tgdkRcwCsjwN7KKW",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "table": {
+          "__rl": true,
+          "value": "user",
+          "mode": "list",
+          "cachedResultName": "user"
+        },
+        "where": {
+          "values": [
+            {
+              "column": "id",
+              "value": "={{ $json.user_id }}"
+            }
+          ]
+        },
+        "options": {
+          "outputColumns": [
+            "id",
+            "username",
+            "email"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [
+        0,
+        40
+      ],
+      "id": "a77d4ba9-7855-4b7b-993a-83f168622909",
+      "name": "MySQL4",
+      "credentials": {
+        "mySql": {
+          "id": "WFLudHUDyDuCwI6O",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "advanced": true,
+        "mergeByFields": {
+          "values": [
+            {
+              "field1": "id",
+              "field2": "user_id"
+            }
+          ]
+        },
+        "joinMode": "enrichInput2",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        180,
+        160
+      ],
+      "id": "184860a1-d55e-40ba-9aac-6c111020ad7e",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "advanced": true,
+        "mergeByFields": {
+          "values": [
+            {
+              "field1": "course_code",
+              "field2": "course_id"
+            }
+          ]
+        },
+        "joinMode": "enrichInput1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -540,
+        180
+      ],
+      "id": "ae86e79a-5d86-40f2-aee3-bd3fe2997724",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "operation": "runCustomScript",
+        "scriptCode": "function delay(time) {\n   return new Promise(function(resolve) { \n       setTimeout(resolve, time)\n   });\n}\n\nawait $page.goto('https://aais1.nkust.edu.tw/selcrs_dp',{ waitUntil: 'networkidle0' }); // 請換成高科的網址\n  \nawait $page.focus('#UserAccount'); // 先 focus\nawait $page.keyboard.type('C112151110');\nawait $page.keyboard.press('Tab');\nawait $page.keyboard.type('Love0601');\nawait $page.click('#Login'); // 修改成登入按鈕的 selector\nawait $page.waitForNavigation({ waitUntil: 'networkidle0' }, { timeout: 5000 }); // 等待頁面導航\n\nconst currentUrl = await $page.url(); // 取得當前網址\nconst newUrl = currentUrl.replace('Home/About', 'AddSelect/AddSelectPage'); // 替換網址\nawait $page.goto(newUrl,{ waitUntil: 'networkidle0' }, { timeout: 5000 }); // 瀏覽器開啟新網址\n\nawait $page.evaluate(() => {\n     document.querySelector('.main-sidebar').style.display = 'none';\n}, { timeout: 5000 });\n\nconst courseCodes = $input.item.json[\"course_code\"];\nlet availableCourses = [];\n\nfor (const code of courseCodes) {\n  await $page.waitForSelector('#searchForm', { timeout: 10000 }); // 等待搜尋結果出現\n  await $page.focus('input#scr_selcode.form-control'); // 先 focus\n  delay(200);\n  await $page.keyboard.type(code);\n  delay(200);\n  await $page.keyboard.press('Enter'); // 按 Enter 提交\n\n  const response = await $page.waitForResponse(async (response) => {\n    return response.url().includes('/CourseSearch') && response.status() === 200;\n  });\n  const responseData = await response.json(); // 解析 JSON\n\n  let remainingSeats = 0;\n  \n  // 檢查 courseData 是否存在\n  if (responseData.recordsTotal > 0) {\n    // 取得第一個課程的資料\n    const courseData = responseData.data;\n    // 取得 scr_precnt 和 scr_acptcnt 的值\n    const scrPrecValue = courseData[0].scr_precnt; // 總名額\n    const scrAcptValue = courseData[0].scr_acptcnt; // 已接受人數\n\n    // 計算剩餘名額\n    remainingSeats = scrPrecValue - scrAcptValue;\n  }\n\n  if (remainingSeats > 0) {\n    availableCourses.push({ \"course_id\": code, \"num\": remainingSeats });\n  }\n}\n\n// 格式化為指定結構\nconst result = [\n  {\n    json: {\n      availableCourses,\n    },\n  },\n];\n\nreturn result;",
+        "options": {
+          "browserWSEndpoint": "ws://browserless:3000",
+          "device": "iPad (gen 6)",
+          "pageCaching": true
+        }
+      },
+      "type": "n8n-nodes-puppeteer.puppeteer",
+      "typeVersion": 1,
+      "position": [
+        -1220,
+        200
+      ],
+      "id": "e26cff29-e1f5-4ac1-b235-20570f7ad0b5",
+      "name": "test",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1780,
+        200
+      ],
+      "id": "99986c13-4bab-4fc1-8057-11e57ba66521",
+      "name": "Schedule Trigger"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "MySQL": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "test",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MySQL1": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "MySQL1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Sort1": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "MySQL4",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "MySQL4": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Sort1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "test": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "MySQL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "89ee50ce-eaea-4b49-890b-19cb53400e9f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5a24765d3e5c7fc02faae37e3ef1fdc132125e90e293aae0885e57664c749955"
+  },
+  "id": "jcBWCbWJUi0EbRPr",
+  "tags": []
+}

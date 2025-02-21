@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>註冊</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h2 class="text-center">註冊</h2>
+        <div class="mb-3">
+            <input type="text" id="register_username" class="form-control" placeholder="使用者名稱">
+        </div>
+        <div class="mb-3">
+            <input type="password" id="register_password" class="form-control" placeholder="密碼">
+        </div>
+        <div class="mb-3">
+            <input type="email" id="register_email" class="form-control" placeholder="電子郵件">
+        </div>
+        <button onclick="register()" class="btn btn-success w-100">註冊</button>
+
+        <hr>
+        
+        <div class="text-center">
+            <p>已經有帳號了嗎？<a href="index.html">登入</a></p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
